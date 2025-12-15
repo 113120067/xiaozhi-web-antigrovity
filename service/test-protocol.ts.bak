@@ -52,3 +52,6 @@ ws.on('close', (code, reason) => {
 ws.on('error', (err) => {
     console.error('Error:', err);
 });
+
+export { };
+

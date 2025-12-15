@@ -11,3 +11,6 @@ for (let i = 0; i < token.length; i++) {
 
 const url = config.WS_URL;
 console.log(`URL Raw: '${url}'`);
+
+export { };
+

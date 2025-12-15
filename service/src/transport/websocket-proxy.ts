@@ -142,7 +142,7 @@ export class WebSocketProxy {
             ...(config.DEVICE_TOKEN ? { "Authorization": `Bearer ${config.DEVICE_TOKEN}` } : {})
         };
 
-        const serverWs = new WebSocket(serverUrl, { headers });
+        serverWs = new WebSocket(serverUrl, { headers });
 
         // State for Audio Buffering (Server -> Client)
         let audioAccumulator = Buffer.alloc(0);
@@ -152,7 +152,7 @@ export class WebSocketProxy {
 
         // --- Server WS Events ---
 
-        serverWs.on('open', () => {
+        serverWs!.on('open', () => {
             logger.info('Connected to Xiaozhi Cloud');
             // Flush buffer
             while (messageBuffer.length > 0) {
@@ -162,7 +162,7 @@ export class WebSocketProxy {
         });
 
         // @ts-ignore
-        serverWs.on('message', (data: any, isBinary: boolean) => {
+        serverWs!.on('message', (data: any, isBinary: boolean) => {
             if (!isBinary) {
                 // Text Message (Forward to Client)
                 const text = data.toString();
@@ -217,12 +217,12 @@ export class WebSocketProxy {
             }
         });
 
-        serverWs.on('close', (code, reason) => {
+        serverWs!.on('close', (code, reason) => {
             logger.warn(`Xiaozhi Cloud connection closed: Code = ${code}, Reason = ${reason.toString()} `);
             clientWs.close();
         });
 
-        serverWs.on('error', (err) => {
+        serverWs!.on('error', (err) => {
             logger.error(`Xiaozhi Cloud error: ${err.message} `);
             clientWs.close();
         });
