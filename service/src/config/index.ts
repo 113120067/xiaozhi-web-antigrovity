@@ -13,6 +13,9 @@ export const config = {
     WS_URL: (process.env.WS_URL || 'wss://api.xiaozhi.me/ws').trim(),
     OTA_VERSION_URL: (process.env.OTA_VERSION_URL || 'https://api.xiaozhi.me/ota/version').trim(),
 
+    // Security
+    ALLOWED_ORIGIN: (process.env.ALLOWED_ORIGIN || '*').trim(), // Default to * for dev context, but user should set this in prod
+
     // Local Server
     PORT: parseInt(process.env.PORT || '8080', 10),
     HOST: process.env.HOST || '0.0.0.0',

@@ -42,7 +42,7 @@ export class WebSocketProxy {
         try {
             // 1. Register Plugins
             await this.fastify.register(cors, {
-                origin: true, // Allow all origins (reflection)
+                origin: config.ALLOWED_ORIGIN === '*' ? true : config.ALLOWED_ORIGIN,
                 methods: ['GET', 'POST', 'OPTIONS']
             });
             await this.fastify.register(websocket);
