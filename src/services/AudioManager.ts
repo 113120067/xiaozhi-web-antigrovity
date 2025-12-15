@@ -7,6 +7,7 @@ export class AudioService {
   private _userMediaNode: MediaStreamAudioSourceNode | null = null;
   private _processorNode: AudioWorkletNode | null = null;
   private _onProcess: ((audioLevel: number, audioData: Float32Array) => void) | null = null;
+  private _gainNode: GainNode | null = null;
   private _sourceNode: AudioBufferSourceNode | null = null;
   private _audioQueue: AudioBuffer[] = [];
   private _onQueueEmpty: (() => void) | null = null;
@@ -115,6 +116,7 @@ export class AudioService {
         channelCount: 1,
         echoCancellation: true,
         noiseSuppression: true,
+        autoGainControl: true,
       },
       video: false,
     }).catch((err: unknown) => {
@@ -172,7 +174,15 @@ export class AudioService {
       console.log("[AudioManager][connectMediaResources] Resources not ready.");
       return;
     }
-    this._userMediaNode.connect(this._processorNode);
+
+    // Create GainNode for amplification
+    this._gainNode = this._audioContext.createGain();
+    this._gainNode.gain.value = 5.0; // Boost volume by 5x to fix low input issues
+
+    // Connect: Source -> Gain -> Processor
+    this._userMediaNode.connect(this._gainNode);
+    this._gainNode.connect(this._processorNode);
+
     this._audioStream.getTracks().forEach((track) => (track.enabled = true));
 
     if (this._audioContext.state === "suspended") {
@@ -230,10 +240,18 @@ export class AudioService {
     }
   }
 
+  public clearGainNode = () => {
+    if (this._gainNode) {
+      this._gainNode.disconnect();
+      this._gainNode = null;
+    }
+  }
+
   public clearMediaResources = () => {
     this.clearAudioQueue();
     this.clearAudioStream();
     this.clearUserMediaNode();
+    this.clearGainNode();
     this.clearProcessorNode();
   };
 }

@@ -124,8 +124,12 @@ const wsService = new WebSocketService({
   onConnect() {
     ElMessage.success("连接成功");
   },
-  onDisconnect() {
-    ElMessage.error("连接已断开，正在尝试重连");
+  onDisconnect(event: CloseEvent) {
+    if (event.code === 1005) {
+       console.log("Connection closed normally (1005), reconnecting silently...");
+    } else {
+       ElMessage.error(`连接已断开(${event.code})，正在尝试重连`);
+    }
     setTimeout(() => {
       wsService.connect(settingStore.wsProxyUrl);
     }, 3000);
