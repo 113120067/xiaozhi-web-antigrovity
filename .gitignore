@@ -41,3 +41,4 @@ config/
 
 # Others
 *.bat
+!service/src/config/

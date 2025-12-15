@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"pnpm dev:frontend\" \"pnpm dev:backend\" --names \"web,api\" --prefix-colors \"cyan,yellow\"",
     "dev:frontend": "vite --host",
-    "dev:backend": "cd backend && uv run main.py",
+    "dev:backend": "cd service && npm run dev",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
