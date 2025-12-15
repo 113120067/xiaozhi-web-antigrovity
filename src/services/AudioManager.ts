@@ -111,7 +111,7 @@ export class AudioService {
     }
     this._audioStream = await navigator.mediaDevices.getUserMedia({
       audio: {
-        sampleRate: 24000,
+        // sampleRate: 24000, 
         channelCount: 1,
         echoCancellation: true,
         noiseSuppression: true,
@@ -150,7 +150,7 @@ export class AudioService {
         return;
       }
       const audioLevel = this.detectAudioLevel(e.data);
-      console.log("[AudioManager][processorNode.port.onmessage] Audio Level:", audioLevel.toFixed(2));
+      console.log("[AudioManager][processorNode.port.onmessage] Audio Level:", audioLevel.toFixed(4));
       this._onProcess?.(audioLevel, e.data);
     };
   }

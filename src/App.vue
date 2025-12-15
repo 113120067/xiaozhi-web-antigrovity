@@ -21,7 +21,7 @@ import { AudioService } from "./services/AudioManager";
 const voiceAnimationManager = new VoiceAnimationManager();
 const chatStateManager = new ChatStateManager({
   thresholds: {
-    USER_SPEAKING: 0.04,
+    USER_SPEAKING: 0.002, // Lowered from 0.04 to catch quiet inputs
     USER_INTERRUPT_AI: 0.1,
   },
   timeout: {
