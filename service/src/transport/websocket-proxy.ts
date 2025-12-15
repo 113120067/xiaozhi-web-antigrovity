@@ -1,6 +1,16 @@
-import WebSocket, { WebSocketServer } from 'ws';
+import Fastify, { FastifyInstance } from 'fastify';
+import cors from '@fastify/cors';
+import websocket from '@fastify/websocket';
+import { WebSocket } from 'ws'; // Import type for compatibility
 import { config } from '../config';
 import { logger } from '../utils/logger';
+import fs from 'fs';
+import path from 'path';
+
+const LOG_FILE = path.join(process.cwd(), 'debug_proxy.log');
+function logToFile(msg: string) {
+    fs.appendFileSync(LOG_FILE, `[${new Date().toISOString()}] ${msg}\n`);
+}
 import { deviceIdentity } from '../protocol/device-identity';
 import { OTAClient, otaClient } from '../protocol/ota-client';
 import { AudioCodec, AudioFrameBuffer } from '../audio/codec';
@@ -25,24 +35,86 @@ function float32ToInt16(buffer: Buffer): Buffer {
 }
 
 export class WebSocketProxy {
-    private wss: WebSocketServer;
+    private fastify: FastifyInstance;
     private codec: AudioCodec;
     private frameBuffer: AudioFrameBuffer;
 
     constructor() {
-        this.wss = new WebSocketServer({ port: config.PORT, host: config.HOST });
+        this.fastify = Fastify();
         this.codec = new AudioCodec();
         this.frameBuffer = new AudioFrameBuffer();
+    }
 
-        logger.info(`WebSocket Proxy listening on ${config.HOST}:${config.PORT}`);
+    public async start() {
+        try {
+            // 1. Register Plugins
+            await this.fastify.register(cors, {
+                origin: true, // Allow all origins (reflection)
+                methods: ['GET', 'POST', 'OPTIONS']
+            });
+            await this.fastify.register(websocket);
 
-        this.wss.on('connection', (clientWs, req) => {
-            logger.info(`New frontend connection from ${req.socket.remoteAddress}`);
-            this.handleConnection(clientWs);
-        });
+            // 2. Define Routes
+
+            // HTTP /config
+            this.fastify.get('/config', async (request, reply) => {
+                const responseData = {
+                    data: {
+                        device_id: deviceIdentity.macAddress,
+                        ws_url: config.WS_URL,
+                        ws_proxy_url: `:${config.PORT}`, // Frontend appends this to ip.
+                        ota_version_url: config.OTA_VERSION_URL,
+                        token_enable: false,
+                        token: "",
+                        backend_url: `http://${config.HOST}:${config.PORT}`
+                    }
+                };
+                return responseData;
+            });
+
+            // WebSocket / (Root)
+            this.fastify.get('/', { websocket: true }, (connection: any, req: any) => {
+                logToFile(`New frontend connection from ${req.socket.remoteAddress}`);
+                // Verify it's a 'ws' WebSocket (fastify-websocket wraps it)
+                let wsFunc = connection.socket;
+                if (!wsFunc && connection.on) {
+                    // It seems connection IS the socket in some versions/configs
+                    wsFunc = connection;
+                    wsFunc = connection;
+                    logToFile("Using connection object directly as WebSocket");
+                }
+
+                if (!wsFunc) {
+                    logToFile(`Invalid connection object. Keys: ${connection ? Object.keys(connection) : 'null'}`);
+                    return;
+                }
+
+                logToFile(`Socket keys: ${Object.keys(wsFunc)}`);
+                wsFunc.on('error', (err: any) => logToFile(`Client Socket Error: ${err.message}`));
+                wsFunc.on('close', (code: number, reason: Buffer) => logToFile(`Client Socket Closed: ${code} ${reason}`));
+                wsFunc.on('ping', () => logToFile('Client Ping'));
+                wsFunc.on('pong', () => logToFile('Client Pong'));
+
+                this.handleConnection(wsFunc as unknown as WebSocket).catch(err => {
+                    logToFile(`Connection handling error: ${err.message}`);
+                });
+            });
+
+            // 3. Start Server
+            await this.fastify.listen({ port: config.PORT, host: config.HOST });
+            logger.info(`Service listening on ${config.HOST}:${config.PORT}`);
+
+        } catch (err: any) {
+            logger.error("Failed to start server", err.message);
+            process.exit(1);
+        }
     }
 
     private async handleConnection(clientWs: WebSocket) {
+        if (!clientWs) {
+            logger.error("handleConnection called with undefined clientWs");
+            return;
+        }
         // 1. Get Server Address
         let serverUrl = config.WS_URL;
         try {
@@ -65,27 +137,37 @@ export class WebSocketProxy {
 
         // State for Audio Buffering (Server -> Client)
         let audioAccumulator = Buffer.alloc(0);
-        const CHUNK_THRESHOLD = 64000; // ~64KB chunks like Python
+        const CHUNK_THRESHOLD = 64000;
         let totalSamplesAccumulated = 0;
         let isFirstAudio = true;
+
+        // Buffer for messages before server is ready
+        const messageBuffer: any[] = [];
+        const isServerReady = () => serverWs.readyState === WebSocket.OPEN;
 
         // --- Server WS Events ---
 
         serverWs.on('open', () => {
             logger.info('Connected to Xiaozhi Cloud');
+            // Flush buffer
+            while (messageBuffer.length > 0) {
+                const { data, isBinary } = messageBuffer.shift();
+                this.processClientMessage(data, isBinary, serverWs);
+            }
         });
 
-        serverWs.on('message', (data: WebSocket.RawData, isBinary: boolean) => {
+        // @ts-ignore
+        serverWs.on('message', (data: any, isBinary: boolean) => {
             if (!isBinary) {
                 // Text Message (Forward to Client)
                 const text = data.toString();
+                logger.info(`[Proxy] Server -> Client (Text): ${text}`);
 
                 // Check for TTS events to reset buffer
                 try {
                     const json = JSON.parse(text);
                     if (json.type === 'tts' && json.state === 'start') {
                         // Flush remaining audio if any? 
-                        // Python code: if buffer > 44, send it.
                         if (audioAccumulator.length > 0) {
                             clientWs.send(this.wrapInWav(audioAccumulator, totalSamplesAccumulated));
                         }
@@ -131,45 +213,31 @@ export class WebSocketProxy {
             }
         });
 
-        serverWs.on('close', () => {
-            logger.info('Xiaozhi Cloud connection closed');
+        serverWs.on('close', (code, reason) => {
+            logger.warn(`Xiaozhi Cloud connection closed: Code=${code}, Reason=${reason.toString()}`);
             clientWs.close();
         });
 
         serverWs.on('error', (err) => {
-            logger.error('Xiaozhi Cloud error:', err.message);
+            logger.error(`Xiaozhi Cloud error: ${err.message}`);
             clientWs.close();
         });
 
 
         // --- Client WS Events ---
 
-        clientWs.on('message', (data: WebSocket.RawData, isBinary: boolean) => {
-            if (!isBinary) {
-                // Text from frontend -> Forward to Cloud
-                if (serverWs.readyState === WebSocket.OPEN) {
-                    serverWs.send(data);
-                }
-            } else {
-                // Audio from frontend (Float32 PC) -> Opus -> Cloud
-                const floatBuffer = data as Buffer;
-                if (floatBuffer.length > 0) {
-                    // 1. Convert Float32 to Int16
-                    const pcmInt16 = float32ToInt16(floatBuffer);
-
-                    // 2. Chunk into 960-sample frames
-                    const frames = this.frameBuffer.feed(pcmInt16);
-
-                    // 3. Encode and Send
-                    if (serverWs.readyState === WebSocket.OPEN) {
-                        for (const frame of frames) {
-                            const opus = this.codec.encode(frame);
-                            serverWs.send(opus);
-                        }
-                    }
-                }
+        // @ts-ignore
+        clientWs.on('message', (data: any, isBinary: boolean) => {
+            logToFile(`[Proxy] Client message received. Binary=${isBinary}, ServerReady=${serverWs.readyState === WebSocket.OPEN}`);
+            if (serverWs.readyState !== WebSocket.OPEN) {
+                logToFile(`[Proxy] Server not ready, buffering...`);
+                messageBuffer.push({ data, isBinary });
+                return;
             }
+            this.processClientMessage(data, isBinary, serverWs);
         });
+
+
 
         clientWs.on('close', () => {
             logger.info('Client closed connection');
@@ -182,5 +250,34 @@ export class WebSocketProxy {
         // Create Header
         const header = WavHeader.create(sampleCount);
         return Buffer.concat([header, pcmData]);
+    }
+
+    private processClientMessage(data: any, isBinary: boolean, serverWs: WebSocket) {
+        if (!isBinary) {
+            // Text from frontend -> Forward to Cloud
+            const text = data.toString();
+            logToFile(`[Proxy] Client -> Server (Text): ${text}`);
+            if (serverWs.readyState === WebSocket.OPEN) {
+                serverWs.send(text);
+            }
+        } else {
+            // Audio from frontend (Float32 PC) -> Opus -> Cloud
+            const floatBuffer = data as Buffer;
+            if (floatBuffer.length > 0) {
+                // 1. Convert Float32 to Int16
+                const pcmInt16 = float32ToInt16(floatBuffer);
+
+                // 2. Chunk into 960-sample frames
+                const frames = this.frameBuffer.feed(pcmInt16);
+
+                // 3. Encode and Send
+                if (serverWs.readyState === WebSocket.OPEN) {
+                    for (const frame of frames) {
+                        const opus = this.codec.encode(frame);
+                        serverWs.send(opus);
+                    }
+                }
+            }
+        }
     }
 }

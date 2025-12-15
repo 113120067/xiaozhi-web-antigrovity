@@ -43,6 +43,7 @@ export class WebSocketService {
         }
 
         const data = typeof message === 'string' ? message : JSON.stringify(message)
+        console.log("[WebSocketService] Sending message:", data)
         this.ws.send(data)
     }
 

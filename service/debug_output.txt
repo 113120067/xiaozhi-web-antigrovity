@@ -1,0 +1,25 @@
+
+> service@1.0.0 dev
+> ts-node src/index.ts
+
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+[INFO] Loaded device identity: MAC=26:1B:EA:96:C1:BD, ClientID=86fe4ace-4827-491a-9102-1da46d09861d
+[INFO] Service listening on 0.0.0.0:8080
+[INFO] Service started successfully.
+[INFO] New frontend connection from 127.0.0.1
+[INFO] Checking OTA at https://api.xiaozhi.me/ota/version...
+Payload: {"version":2,"flash_size":16777216,"psram_size":0,"minimum_free_heap_size":8318916,"mac_address":"26:1B:EA:96:C1:BD","uuid":"86fe4ace-4827-491a-9102-1da46d09861d","chip_model_name":"esp32s3","chip_info":{"model":9,"cores":2,"revision":2,"features":18},"application":{"name":"xiaozhi","version":"1.1.2","idf_version":"v5.3.2-dirty"},"partition_table":[],"ota":{"label":"factory"},"board":{"type":"bread-compact-wifi","ip":"192.168.1.100","mac":"26:1B:EA:96:C1:BD"}}
+[INFO] New frontend connection from 127.0.0.1
+[INFO] Checking OTA at https://api.xiaozhi.me/ota/version...
+Payload: {"version":2,"flash_size":16777216,"psram_size":0,"minimum_free_heap_size":8318916,"mac_address":"26:1B:EA:96:C1:BD","uuid":"86fe4ace-4827-491a-9102-1da46d09861d","chip_model_name":"esp32s3","chip_info":{"model":9,"cores":2,"revision":2,"features":18},"application":{"name":"xiaozhi","version":"1.1.2","idf_version":"v5.3.2-dirty"},"partition_table":[],"ota":{"label":"factory"},"board":{"type":"bread-compact-wifi","ip":"192.168.1.100","mac":"26:1B:EA:96:C1:BD"}}
+[INFO] New frontend connection from 127.0.0.1
+[INFO] Checking OTA at https://api.xiaozhi.me/ota/version...
+Payload: {"version":2,"flash_size":16777216,"psram_size":0,"minimum_free_heap_size":8318916,"mac_address":"26:1B:EA:96:C1:BD","uuid":"86fe4ace-4827-491a-9102-1da46d09861d","chip_model_name":"esp32s3","chip_info":{"model":9,"cores":2,"revision":2,"features":18},"application":{"name":"xiaozhi","version":"1.1.2","idf_version":"v5.3.2-dirty"},"partition_table":[],"ota":{"label":"factory"},"board":{"type":"bread-compact-wifi","ip":"192.168.1.100","mac":"26:1B:EA:96:C1:BD"}}
+[ERROR] OTA Check failed: Request failed with status code 404
+[INFO] Connecting to Xiaozhi Server: wss://api.xiaozhi.me/ws
+C:\Users\ricke\Desktop\xiaozhi-web-antigrovity\service\src\transport\websocket-proxy.ts:188
+        clientWs.on('message', (data: any, isBinary: boolean) => {
+                 ^
+TypeError: Cannot read properties of undefined (reading 'on')
+    at WebSocketProxy.handleConnection (C:\Users\ricke\Desktop\xiaozhi-web-antigrovity\service\src\transport\websocket-proxy.ts:188:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)

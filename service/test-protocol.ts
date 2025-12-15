@@ -1,0 +1,54 @@
+
+import WebSocket from 'ws';
+
+const serverUrl = 'wss://api.tenclass.net/xiaozhi/v1/';
+
+const headers = {
+    "Device-Id": "84:7b:57:bd:a2:99",
+    "Client-Id": "7b6a7950-79aa-4a57-9b70-1b331c5c5d6f",
+    "Protocol-Version": "1",
+    "Authorization": "Bearer test_token"
+};
+
+const ws = new WebSocket(serverUrl, { headers });
+
+ws.on('open', () => {
+    console.log('Connected!');
+
+    const hello = {
+        type: "hello",
+        version: 3,
+        audio_params: {
+            format: "opus",
+            sample_rate: 16000,
+            channels: 1,
+            frame_duration: 60,
+        }
+    };
+
+    console.log('Sending Hello:', JSON.stringify(hello));
+    ws.send(JSON.stringify(hello));
+
+    setTimeout(() => {
+        const listen = {
+            type: "listen",
+            state: "detect",
+            text: "hello",
+            source: "text"
+        };
+        console.log('Sending Listen:', JSON.stringify(listen));
+        ws.send(JSON.stringify(listen));
+    }, 2000);
+});
+
+ws.on('message', (data) => {
+    console.log('Received:', data.toString());
+});
+
+ws.on('close', (code, reason) => {
+    console.log(`Closed: ${code} ${reason}`);
+});
+
+ws.on('error', (err) => {
+    console.error('Error:', err);
+});

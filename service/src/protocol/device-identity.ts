@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { logger } from '../utils/logger';
 
 const IDENTITY_FILE = path.join(process.cwd(), '.device_identity');
+import os from 'os';
 
 export class DeviceIdentity {
     public macAddress: string;
@@ -37,15 +38,29 @@ export class DeviceIdentity {
     }
 
     private generateMacAddress(): string {
-        // Generate a random valid unicast MAC address
+        try {
+            const interfaces = os.networkInterfaces();
+            for (const name of Object.keys(interfaces)) {
+                if (interfaces[name]) {
+                    for (const net of interfaces[name]!) {
+                        // Skip internal (i.e. 127.0.0.1) and non-IPv4 addresses
+                        if (net.family === 'IPv4' && !net.internal && net.mac && net.mac !== '00:00:00:00:00:00') {
+                            logger.info(`Found system MAC address: ${net.mac} on interface ${name}`);
+                            return net.mac.toUpperCase();
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            logger.error(`Failed to get system MAC address: ${e}. Falling back to random.`);
+        }
+
+        // Fallback to random if no valid MAC found
         const hexDigits = "0123456789ABCDEF";
         let macAddress = "";
         for (let i = 0; i < 6; i++) {
             let octet = Math.floor(Math.random() * 256);
             if (i === 0) {
-                // Ensure it's a unicast address and locally administered (bit 1=1, bit 0=0 is typical for local)
-                // Actually just random is fine for emulation usually, but let's be safe.
-                // x2, x6, xA, xE are locally administered.
                 octet = octet & 0xFC | 0x02;
             }
             macAddress += (octet.toString(16).padStart(2, '0').toUpperCase());

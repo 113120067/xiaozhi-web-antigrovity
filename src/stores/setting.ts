@@ -23,7 +23,7 @@ export const useSettingStore = defineStore('setting', () => {
 	const tokenEnable = ref<boolean>(false)
 	const token = ref<string>("")
 	const visible = ref<boolean>(false)
-	
+
 	const configRefMap: Record<string, Ref<string | boolean>> = {
 		ws_url: wsUrl,
 		ws_proxy_url: wsProxyUrl,
@@ -71,7 +71,10 @@ export const useSettingStore = defineStore('setting', () => {
 			token: token.value,
 			device_id: deviceId.value
 		}
-		const dataOK = Object.values(configJson).every(value => value !== "")
+		const dataOK = Object.entries(configJson).every(([key, value]) => {
+			if (key === 'token') return tokenEnable.value ? value !== "" : true;
+			return value !== "";
+		})
 		if (dataOK) {
 			localStorage.setItem('settings', JSON.stringify(configJson))
 			console.log("[useSettingStore][saveToLocal] 配置文件更新成功", configJson)

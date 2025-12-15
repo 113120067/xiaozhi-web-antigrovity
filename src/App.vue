@@ -185,7 +185,7 @@ const ensureBackendUrl = async () => {
     const { value: backendUrl } = await ElMessageBox.prompt('请输入本地服务器地址：', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      inputValue: 'http://localhost:8081',
+      inputValue: 'http://localhost:8080',
       inputPattern: /^http(s?):\/\/.+/, 
       inputErrorMessage: '请输入有效的服务器地址(http:// 或 https:// 开头)',
     });
