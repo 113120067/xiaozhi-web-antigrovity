@@ -13,20 +13,6 @@ Thumbs.db
 dist
 dist-ssr
 coverage
-*.local
-*-lock.json
-
-/cypress/videos/
-/cypress/screenshots/
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
 *.sw?
 
 *.tsbuildinfo
@@ -42,3 +28,6 @@ config/
 # Others
 *.bat
 !service/src/config/
+
+# Legacy Python Backend (Do not upload)
+backend_old/

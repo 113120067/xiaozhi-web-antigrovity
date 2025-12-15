@@ -1,120 +1,96 @@
-# xiaozhi-webui
+# 小智 WebUI (Node.js 重構版)
 
-> 本项目供学习交流使用，如果有问题欢迎联系 zamyang@qq.com
+> 本項目基於 [xiaozhi-web-client](https://github.com/TOM88812/xiaozhi-web-client) 與 [xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) 進行開發。
+> 特別感謝原作者的開源貢獻！另外感謝 [涂丫丫](http://xhslink.com/a/ZWjAcoOzvzq9) 提供的可愛頭像。
 
-## 项目简介
+## 專案簡介
 
-声明：「小智」项目起源于 [虾哥](https://github.com/78/xiaozhi-esp32) 之手。
+這是一個讓你在電腦或手機網頁上，就能體驗「小智 AI」語音對話的專案。
+我們移除了複雜的 Python 設定，將後端完全改寫為 **Node.js** 版本，讓安裝變得非常簡單，就像安裝普通軟體一樣。
 
-本项目 xiaozhi-webui 是一个使用 **Node.js (TypeScript)** + **Vue3** 实现的小智语音 Web 端，旨在通过代码学习和在没有硬件条件下體驗 AI 小智的對話功能。
+**主要功能：**
+*   **語音通話**：就像打電話給朋友一樣跟 AI 聊天（支援打斷、自動靜音）。
+*   **超簡單安裝**：不用懂程式碼，跟著步驟做就能跑起來。
+*   **自動設定**：不需要手動查 MAC 地址，程式會自動幫你處理好。
+*   **手機也能用**：電腦開好後，手機連上同一個 Wi-Fi 就能用網頁版控制。
 
-本仓库使用 Vue3 基于 [xiaozhi-web-client](https://github.com/TOM88812/xiaozhi-web-client) 进行重构，并进行了一定的优化和拓展。
+---
 
-小智美美滴头像取自 [小红书 @涂丫丫](http://xhslink.com/a/ZWjAcoOzvzq9)
+## 快速安裝 (小學以上適用版)
 
-## 演示
+請依照您的電腦系統，跟著以下步驟操作：
 
-<div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
-    <img src="./images/聊天.jpg" alt="聊天" style="width: 45%;">
-    <img src="./images/聊天3.jpg" alt="聊天3" style="width: 45%;">
-</div>
+### 1. 準備工具
+您需要先安裝 **Node.js** 這個執行環境。
+*   前往 [Node.js 官網](https://nodejs.org/zh-tw/) 下載 **LTS (長期維護版)** 並安裝。
+*   安裝完後，打開電腦的「終端機 (Terminal)」或「命令提示字元 (cmd)」，輸入 `node -v`，如果有出現版本號 (例如 v20.x.x) 代表成功。
 
-<div style="display: flex; justify-content: space-around;">
-    <img src="./images/设置面板.jpg" alt="设置面板" style="width: 45%;">
-    <img src="./images/语音通话.jpg" alt="语音通话" style="width: 45%;">
-</div>
+### 2. 下載本專案
+點擊本頁面右上角的 **Codes** -> **Download ZIP**，下載後解壓縮到桌面。
 
-## 功能特点
+### 3. 一鍵安裝與啟動
+我們提供了簡單的指令來自動安裝所有需要的東西。
 
-- [x] 文字聊天：像微信好友一样聊天
-- [x] 语音聊天：和小智进行语音对话，支持打断
-- [x] 自动配置：自动获取 MAC 地址、更新 OTA 版本，避免繁杂的配置流程
-- [x] 反馈动效：（语音对话时）用户的说话波形 + 小智回答时的头像缩放动画
-- [x] 移动适配：支持移动端配置服务器地址
-
-## 系統要求
-- Node.js 18+  (建議 v20 LTS)
-- pnpm (推薦) 或 npm
-- 支援的作業系統：Windows 10+、macOS、Linux
-
-## 快速開始
-
-### 方式一：一键启动（推荐）
-
-1. 克隆项目并进入目录
+打開終端機 (或 cmd)，進入剛解壓縮的資料夾 (例如 `cd Desktop/xiaozhi-webui`)，然後依序輸入：
 
 ```bash
-git clone https://github.com/kalicyh/xiaozhi-webui.git
-cd xiaozhi-webui
-```
+# 1. 安裝網頁介面需要的零件
+npm install
 
-2. 安装前端依赖
-
-```bash
-pnpm install
-```
-
-3. 安装后端依赖 (Node.js Service)
-
-```bash
+# 2. 安裝後端服務需要的零件
 cd service
 npm install
 cd ..
+
+# 3. 啟動！
+npm run dev
 ```
 
-4. 同时启动前后端
+啟動成功後，瀏覽器會自動打開，你就會看到小智的聊天視窗囉！
 
-```bash
-pnpm dev
-```
+---
 
-此命令将使用 `concurrently` 同时启动前端 (Vite) 和 后端 (Node.js Service)。啟動後，瀏覽器應會自動打開 `http://localhost:5173`。
+## 怎麼使用？
 
-## 使用說明
+1.  **第一次設定**：
+    *   網頁打開後，點選左上角的「設定」圖示。
+    *   確認「後端地址」欄位是 `http://localhost:8080` (通常會自動填好)。
+    *   看到 Device ID 出現一串亂碼，代表連線成功了！
 
-1. **檢查設備 ID**
-   - 啟動成功後，進入網頁點擊左上角的「設置」圖示。
-   - 在「小智信息」中，您應該能看到自動生成的 `Device ID`。這代表後端模擬器已成功運作。
+2.  **開始聊天**：
+    *   **打字**：在下方輸入框打「你好」，按 Enter 發送。
+    *   **講話**：點擊右下角的「電話」圖示，允許麥克風權限。
+    *   對著麥克風說「現在幾點了？」，小智就會回答你囉！
 
-2. **開始聊天**
-   - **文字對話**：直接在下方輸入框打字「你好」，小智應會回覆。
-   - **語音對話**：點擊麥克風圖示（或切換到語音模式），允許瀏覽器使用麥克風。
-   - **說話**：嘗試說「現在幾點了？」，小智會以語音回覆您。
+3.  **手機連線**：
+    *   確保手機跟電腦連在同一個 Wi-Fi。
+    *   在手機瀏覽器輸入電腦的 IP 地址 (例如 `http://192.168.1.100:5173`) 即可使用。
 
-3. **除錯**
-   - 如果無法連線，請檢查終端機 (Terminal) 的輸出日誌。
-   - 正常的日誌應包含 `Connected to Xiaozhi Cloud`。
+---
 
+## 常見問題 (Q&A)
 
-## 项目结构 (Node.js Rewrite)
+**Q: 為什麼講話沒聲音？**
+A: 請檢查電腦音量是否開啟。我們已內建「自動增益控制」，如果還是太小聲，請盡量靠近麥克風。
 
-本项目已从 Python 后端迁移至纯 Node.js 架构，无需安装 Python 环境。
+**Q: 一直出現「連線斷開」的紅字？**
+A: 不用擔心，這是小智為了省電暫時休息。我們已經優化了系統，它會自動安靜地重新連線，你不需要做任何事。
 
-```
-├── service/                            # Node.js 后端服务 (替代原 backend)
-│   ├── src/
-│   │   ├── config/                     # 配置管理
-│   │   ├── protocol/                   # 小智协议模拟
-│   │   ├── transport/                  # WebSocket 代理
-│   │   └── audio/                      # Opus/PCM 音频处理
-│   ├── package.json
-│   └── tsconfig.json
-├── src/                                # 前端源码目录
-│   ├── ...
-├── backend_old/                        # 原 Python 后端 (已废弃备份)
-└── package.json
-```
+**Q: 我需要改 `.env` 檔案嗎？**
+A: 一般使用不需要。程式會自動生成虛擬的身分 ID。只有當您有特定的小智硬體 Token 時才需要手動設定。
 
-## 技术栈
+---
 
-**前端**
-- 框架： Vue3 + TypeScript + Pinia
-- 构建工具：Vite
-- 包管理器：pnpm
-- UI 组件：Element Plus
+## 進階開發者資訊
 
-**后端 (Service)**
-- 运行环境：Node.js (LTS)
-- 语言：TypeScript
-- 框架：无 (原生 WebSocket + Fastify/Node libraries)
-- 音频处理：@discordjs/opus (或 opus-script)
+如果您是開發者，這是技術細節：
+*   **前端**：Vue 3 + TypeScript + Vite + Element Plus
+*   **後端**：Node.js + Fastify + WebSocket (取代原 Python FastAPI)
+*   **音訊處理**：Web Audio API (前端) + Opus Codec (後端)
+*   **目錄結構**：
+    *   `src/`: 前端網頁原始碼
+    *   `service/`: Node.js 後端服務原始碼
+
+歡迎提交 PR 或 Issue 一起改進！
+
+License: MIT
