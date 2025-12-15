@@ -6,12 +6,12 @@ dotenv.config();
 
 export const config = {
     // Device Identity
-    DEVICE_ID: process.env.DEVICE_ID || '', // If empty, will auto-generate
-    DEVICE_TOKEN: process.env.DEVICE_TOKEN || '',
+    DEVICE_ID: (process.env.DEVICE_ID || '').trim(), // If empty, will auto-generate
+    DEVICE_TOKEN: (process.env.DEVICE_TOKEN || '').trim(),
 
     // Server URLs
-    WS_URL: process.env.WS_URL || 'wss://api.xiaozhi.me/ws',
-    OTA_VERSION_URL: process.env.OTA_VERSION_URL || 'https://api.xiaozhi.me/ota/version',
+    WS_URL: (process.env.WS_URL || 'wss://api.xiaozhi.me/ws').trim(),
+    OTA_VERSION_URL: (process.env.OTA_VERSION_URL || 'https://api.xiaozhi.me/ota/version').trim(),
 
     // Local Server
     PORT: parseInt(process.env.PORT || '8080', 10),

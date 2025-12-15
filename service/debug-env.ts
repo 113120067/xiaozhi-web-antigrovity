@@ -1,0 +1,13 @@
+
+import { config } from './src/config';
+
+const token = config.DEVICE_TOKEN;
+console.log(`Token Length: ${token.length}`);
+console.log(`Token Raw: '${token}'`);
+console.log('Char codes:');
+for (let i = 0; i < token.length; i++) {
+    console.log(`${i}: ${token[i]} (${token.charCodeAt(i)})`);
+}
+
+const url = config.WS_URL;
+console.log(`URL Raw: '${url}'`);

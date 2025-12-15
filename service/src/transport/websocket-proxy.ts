@@ -4,13 +4,6 @@ import websocket from '@fastify/websocket';
 import { WebSocket } from 'ws'; // Import type for compatibility
 import { config } from '../config';
 import { logger } from '../utils/logger';
-import fs from 'fs';
-import path from 'path';
-
-const LOG_FILE = path.join(process.cwd(), 'debug_proxy.log');
-function logToFile(msg: string) {
-    fs.appendFileSync(LOG_FILE, `[${new Date().toISOString()}] ${msg}\n`);
-}
 import { deviceIdentity } from '../protocol/device-identity';
 import { OTAClient, otaClient } from '../protocol/ota-client';
 import { AudioCodec, AudioFrameBuffer } from '../audio/codec';
@@ -74,29 +67,22 @@ export class WebSocketProxy {
 
             // WebSocket / (Root)
             this.fastify.get('/', { websocket: true }, (connection: any, req: any) => {
-                logToFile(`New frontend connection from ${req.socket.remoteAddress}`);
+                logger.info(`New frontend connection from ${req.socket.remoteAddress}`);
                 // Verify it's a 'ws' WebSocket (fastify-websocket wraps it)
                 let wsFunc = connection.socket;
                 if (!wsFunc && connection.on) {
                     // It seems connection IS the socket in some versions/configs
                     wsFunc = connection;
-                    wsFunc = connection;
-                    logToFile("Using connection object directly as WebSocket");
+                    logger.info("Using connection object directly as WebSocket");
                 }
 
                 if (!wsFunc) {
-                    logToFile(`Invalid connection object. Keys: ${connection ? Object.keys(connection) : 'null'}`);
+                    logger.error(`Invalid connection object. Keys: ${connection ? Object.keys(connection) : 'null'}`);
                     return;
                 }
 
-                logToFile(`Socket keys: ${Object.keys(wsFunc)}`);
-                wsFunc.on('error', (err: any) => logToFile(`Client Socket Error: ${err.message}`));
-                wsFunc.on('close', (code: number, reason: Buffer) => logToFile(`Client Socket Closed: ${code} ${reason}`));
-                wsFunc.on('ping', () => logToFile('Client Ping'));
-                wsFunc.on('pong', () => logToFile('Client Pong'));
-
                 this.handleConnection(wsFunc as unknown as WebSocket).catch(err => {
-                    logToFile(`Connection handling error: ${err.message}`);
+                    logger.error(`Connection handling error: ${err.message}`);
                 });
             });
 
@@ -115,6 +101,29 @@ export class WebSocketProxy {
             logger.error("handleConnection called with undefined clientWs");
             return;
         }
+
+        // Buffer for messages before server is ready
+        const messageBuffer: any[] = [];
+        let serverWs: WebSocket | null = null;
+
+        // Subscribe to client messages IMMEDIATELY to avoid losing "Hello" during OTA await
+
+        // @ts-ignore
+        clientWs.on('message', (data: any, isBinary: boolean) => {
+            if (!serverWs || serverWs.readyState !== WebSocket.OPEN) {
+                // Buffer message if server not ready
+                messageBuffer.push({ data, isBinary });
+                return;
+            }
+            this.processClientMessage(data, isBinary, serverWs);
+        });
+
+        clientWs.on('close', () => {
+            logger.info('Client closed connection');
+            if (serverWs) serverWs.close();
+            this.frameBuffer.reset();
+        });
+
         // 1. Get Server Address
         let serverUrl = config.WS_URL;
         try {
@@ -141,10 +150,6 @@ export class WebSocketProxy {
         let totalSamplesAccumulated = 0;
         let isFirstAudio = true;
 
-        // Buffer for messages before server is ready
-        const messageBuffer: any[] = [];
-        const isServerReady = () => serverWs.readyState === WebSocket.OPEN;
-
         // --- Server WS Events ---
 
         serverWs.on('open', () => {
@@ -152,7 +157,7 @@ export class WebSocketProxy {
             // Flush buffer
             while (messageBuffer.length > 0) {
                 const { data, isBinary } = messageBuffer.shift();
-                this.processClientMessage(data, isBinary, serverWs);
+                this.processClientMessage(data, isBinary, serverWs!);
             }
         });
 
@@ -161,7 +166,6 @@ export class WebSocketProxy {
             if (!isBinary) {
                 // Text Message (Forward to Client)
                 const text = data.toString();
-                logger.info(`[Proxy] Server -> Client (Text): ${text}`);
 
                 // Check for TTS events to reset buffer
                 try {
@@ -214,35 +218,13 @@ export class WebSocketProxy {
         });
 
         serverWs.on('close', (code, reason) => {
-            logger.warn(`Xiaozhi Cloud connection closed: Code=${code}, Reason=${reason.toString()}`);
+            logger.warn(`Xiaozhi Cloud connection closed: Code = ${code}, Reason = ${reason.toString()} `);
             clientWs.close();
         });
 
         serverWs.on('error', (err) => {
-            logger.error(`Xiaozhi Cloud error: ${err.message}`);
+            logger.error(`Xiaozhi Cloud error: ${err.message} `);
             clientWs.close();
-        });
-
-
-        // --- Client WS Events ---
-
-        // @ts-ignore
-        clientWs.on('message', (data: any, isBinary: boolean) => {
-            logToFile(`[Proxy] Client message received. Binary=${isBinary}, ServerReady=${serverWs.readyState === WebSocket.OPEN}`);
-            if (serverWs.readyState !== WebSocket.OPEN) {
-                logToFile(`[Proxy] Server not ready, buffering...`);
-                messageBuffer.push({ data, isBinary });
-                return;
-            }
-            this.processClientMessage(data, isBinary, serverWs);
-        });
-
-
-
-        clientWs.on('close', () => {
-            logger.info('Client closed connection');
-            serverWs.close();
-            this.frameBuffer.reset();
         });
     }
 
@@ -256,7 +238,6 @@ export class WebSocketProxy {
         if (!isBinary) {
             // Text from frontend -> Forward to Cloud
             const text = data.toString();
-            logToFile(`[Proxy] Client -> Server (Text): ${text}`);
             if (serverWs.readyState === WebSocket.OPEN) {
                 serverWs.send(text);
             }

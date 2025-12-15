@@ -95,7 +95,16 @@ export const useSettingStore = defineStore('setting', () => {
 	const loadFromLocal = (): boolean => {
 		const localConfig = localStorage.getItem('settings')
 		if (localConfig) {
-			updateConfig(JSON.parse(localConfig))
+			const config = JSON.parse(localConfig)
+
+			// Detect stale config pointing to old Python backend port (5000)
+			if (config.ws_proxy_url?.includes(':5000') || config.backend_url?.includes(':5000')) {
+				console.warn("[useSettingStore][loadFromLocal] 检测到旧版配置 (端口 5000)，正在清除缓存以获取新配置 (端口 8080)...")
+				destoryLocal()
+				return false
+			}
+
+			updateConfig(config)
 			console.log("[useSettingStore][loadFromLocal] 配置文件加载成功")
 			return true
 		}
