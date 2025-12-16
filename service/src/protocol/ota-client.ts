@@ -5,9 +5,9 @@ import { XiaozhiOTAInfo } from './xiaozhi-proto';
 import { logger } from '../utils/logger';
 
 export class OTAClient {
-    async getServerAddress(): Promise<string> {
-        const mac = deviceIdentity.macAddress;
-        const clientId = deviceIdentity.clientId;
+    async getServerAddress(mac?: string, clientId?: string): Promise<string> {
+        mac = mac || deviceIdentity.macAddress;
+        clientId = clientId || deviceIdentity.clientId;
 
         const payload: XiaozhiOTAInfo = {
             version: 2,

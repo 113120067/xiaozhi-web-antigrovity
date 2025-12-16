@@ -148,7 +148,8 @@ export class WebSocketProxy {
         // 1. Get Server Address
         let serverUrl = config.WS_URL;
         try {
-            serverUrl = await otaClient.getServerAddress();
+            // Check OTA with the UNIQUE session identity so the server recognizes us
+            serverUrl = await otaClient.getServerAddress(sessionMacAddress, sessionClientId);
         } catch (e) {
             logger.warn('Failed to get OTA address, using default');
         }
