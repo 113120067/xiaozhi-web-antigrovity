@@ -60,7 +60,18 @@
 }
 ```
 
-*   **成功回應**: HTTP 200 (回傳內容可忽略，重點是伺服器已記錄此 MAC)。
+*   **成功回應**: HTTP 200。
+    *   **回應內容 (關鍵)**：
+    ```json
+    {
+      "websocket": {
+        "url": "wss://api.tenclass.net/xiaozhi/v1/",
+        "token": "test-token" // 必須取得此 Token 用於 WebSocket 認證
+      },
+      "server_time": { ... },
+      "firmware": { ... }
+    }
+    ```
 
 ---
 
@@ -72,7 +83,8 @@
     *   `Device-Id`: `{MAC_ADDRESS}` (必須與 OTA 步驟相同)
     *   `Client-Id`: `{CLIENT_UUID}` (必須與 OTA 步驟相同)
     *   `Protocol-Version`: `1`
-    *   `Authorization`: `Bearer {TOKEN}` (選填，若有綁定帳號才需要)
+    *   `Protocol-Version`: `1`
+    *   `Authorization`: `Bearer {TOKEN}` (由 OTA 步驟取得，必須帶入以確保連線穩定)
 
 ### 訊息格式 (Message Flow)
 
@@ -143,5 +155,8 @@ AI 的思考結果與情緒：
     *   也有可能是 URL 錯誤 (少了結尾斜線導致 301)。
 *   **301 (Moved Permanently)**:
     *   WebSocket URL 缺少結尾斜線 `/`。
+*   **1006 (Abnormal Closure)**:
+    *   通常是因為 WebSocket Header 缺少正確的 `Authorization: Bearer {TOKEN}`。
+    *   請確保使用從 OTA 回應中取得的 `token`。
 *   **404 (Not Found)**:
     *   舊版 API (`api.xiaozhi.me`) 已失效，請使用 `api.tenclass.net`。
