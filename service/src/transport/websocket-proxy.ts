@@ -146,7 +146,8 @@ export class WebSocketProxy {
 
         // State for Audio Buffering (Server -> Client)
         let audioAccumulator = Buffer.alloc(0);
-        const CHUNK_THRESHOLD = 64000;
+        // Prioritize low latency: 3200 bytes = 1600 samples = ~100ms at 16kHz
+        const CHUNK_THRESHOLD = 3200;
         let totalSamplesAccumulated = 0;
         let isFirstAudio = true;
 
