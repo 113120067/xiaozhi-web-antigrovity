@@ -48,6 +48,7 @@ export class OTAClient {
             }
 
             const data = response.data;
+            console.log("OTA Response Data:", JSON.stringify(data)); // Debug logging
             if (data && data.mqtt) {
                 // The 'mqtt' field contains connection info. 
                 logger.info('OTA Info received. Device registered/updated.');

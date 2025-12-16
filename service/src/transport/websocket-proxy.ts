@@ -13,13 +13,17 @@ import crypto from 'crypto';
 // Helper to generate random MAC for multi-user support
 // Helper to generate random MAC for multi-user support
 function generateRandomMac(): string {
-    // specific Espressif OUI (e.g., 48:E7:29) to avoid server rejection
-    const prefix = ["48", "E7", "29"];
-    const suffix = [];
-    for (let i = 0; i < 3; i++) {
-        suffix.push(Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase());
+    const hexDigits = "0123456789ABCDEF";
+    let macAddress = "";
+    for (let i = 0; i < 6; i++) {
+        let octet = Math.floor(Math.random() * 256);
+        if (i === 0) {
+            octet = octet & 0xFC | 0x02; // Locally administered
+        }
+        macAddress += (octet.toString(16).padStart(2, '0').toUpperCase());
+        if (i != 5) macAddress += ":";
     }
-    return [...prefix, ...suffix].join(":");
+    return macAddress;
 }
 
 /**
