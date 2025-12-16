@@ -47,8 +47,23 @@ export const useSettingStore = defineStore('setting', () => {
 				if (value !== undefined && value !== null) {
 					// 本地服务器和本地代理 IP 默认为 localhost
 					if (key === 'ws_proxy_url' && typeof value === 'string') {
-						const backendIp = backendUrl.value.split('://')[1].split(':')[0]
-						ref.value = `ws://${backendIp}` + value.substring(value.lastIndexOf(':'))
+						try {
+							const url = new URL(backendUrl.value)
+							const isSecure = url.protocol === 'https:'
+							const wsProtocol = isSecure ? 'wss:' : 'ws:'
+
+							if (isSecure) {
+								// Cloud/HTTPS mode: Use the same host/port as the backend URL (ignore internal part :8080)
+								ref.value = `${wsProtocol}//${url.host}`
+							} else {
+								// Local/HTTP mode: Use hostname + port reported by backend
+								ref.value = `${wsProtocol}//${url.hostname}${value}`
+							}
+						} catch (e) {
+							// Fallback
+							const backendIp = backendUrl.value.split('://')[1].split(':')[0]
+							ref.value = `ws://${backendIp}` + value.substring(value.lastIndexOf(':'))
+						}
 					} else {
 						ref.value = value
 					}
