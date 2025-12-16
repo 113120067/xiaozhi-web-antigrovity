@@ -97,22 +97,41 @@ A: 一般使用不需要。程式會自動生成虛擬的身分 ID。只有當�
 
 ## ☁️ 雲端部署 (Zeabur / Docker) 與資安注意事項
 
-如果您打算將此服務部署到 **Zeabur** 或其他雲端平台，請注意以下資安設定：
+## ☁️ 雲端部署 (Zeabur / Docker)
 
-### 1. 環境變數設定 (Environment Variables)
-為了保護您的服務不被惡意網站盜連，強烈建議設定 `ALLOWED_ORIGIN`。
+如果您打算將此服務部署到 **Zeabur**，請依照以下步驟設定您的前後端服務。
 
-| 變數名稱 | 說明 | 建議值 (Zeabur) | 預設值 (本機) |
-| :--- | :--- | :--- | :--- |
-| `ALLOWED_ORIGIN` | **(重要)** 限制允許連線的前端網址。防止跨站攻擊 (CORS)。 | `https://您的專案網址.zeabur.app` | `*` (不限制) |
-| `HOST` | 服務監聽的 IP 地址。在 Zeabur 必須設為 `0.0.0.0`。 | `0.0.0.0` | `0.0.0.0` |
-| `DEVICE_TOKEN` | (選填) 如果您有官方硬體的 Token，填入此處。 | `您的Token` | (自動生成) |
+### 1. 建立前端服務 (Frontend)
+此服務負責顯示網頁介面。
+*   **Source**: GitHub Repository (選擇本專案)
+*   **Settings (設定)** > **Build & Run**:
+    *   **Root Directory (根目錄)**: `/` (空白)
+    *   **Build Command (建置指令)**: `npm install && npm run build` (重要)
+    *   **Output Directory (輸出目錄)**: `dist` (重要)
+*   **Networking (網路)** > **Domain**:
+    *   點選「綁定 Zeabur 子網域」或您的自訂網域 (例如 `your-frontend.zeabur.app`)。
+    *   這將是您開啟網頁的入口。
 
-### 2. 關於 Host 0.0.0.0
-*   在 **Zeabur** 等容器環境中，服務必須監聽 `0.0.0.0` 才能被外部存取，這是正常的。
-*   在本機開發時，預設 `0.0.0.0` 方便手機連線測試，但請只在可信任的 Wi-Fi 下使用。
+### 2. 建立後端服務 (Backend)
+此服務負責處理 WebSocket 連線與語音邏輯。
+*   **Source**: GitHub Repository (選擇本專案)
+*   **Settings (設定)** > **Build & Run**:
+    *   **Root Directory (根目錄)**: `service` (重要！必填)
+    *   **Start Command**: `npm start` (或由 Zeabur 自動偵測)
+*   **Settings (設定)** > **Environment Variables (環境變數)**:
+    *   `ALLOWED_ORIGIN`: 填入您的**前端網址** (例如 `https://your-frontend.zeabur.app`)，包含 `https://`。
+    *   `HOST`: `0.0.0.0`
+    *   `Device_Token` (選填): 填入您的硬體 Token。
+*   **Networking (網路)** > **Domain**:
+    *   點選「綁定 Zeabur 子網域」 (例如 `your-backend.zeabur.app`)。
+    *   **Port (連接埠)**: 務必選擇 `HTTP` 並填入 `8080`。
 
-### 3. Zeabur 啟動指令
-本專案已新增 `npm start` 指令。Zeabur 會自動偵測並執行，您無需額外設定啟動命令。
+### 3. 連接前後端
+1.  部署並啟動兩個服務 (狀態顯示 Running)。
+2.  開啟您的**前端網頁**。
+3.  點選左上角「設定 (齒輪圖示)」。
+4.  在「後端地址」欄位，填入您後端服務的網址 (例如 `https://your-backend.zeabur.app`)。
+    *   注意：不需要加 `:8080`，Zeabur 會自動處理。
+5.  如果看見 Device ID 出現，即代表連線成功！
 
 License: MIT
