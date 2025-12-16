@@ -8,6 +8,22 @@ import { deviceIdentity } from '../protocol/device-identity';
 import { OTAClient, otaClient } from '../protocol/ota-client';
 import { AudioCodec, AudioFrameBuffer } from '../audio/codec';
 import { WavHeader } from '../audio/wav';
+import crypto from 'crypto';
+
+// Helper to generate random MAC for multi-user support
+function generateRandomMac(): string {
+    const hexDigits = "0123456789ABCDEF";
+    let macAddress = "";
+    for (let i = 0; i < 6; i++) {
+        let octet = Math.floor(Math.random() * 256);
+        if (i === 0) {
+            octet = octet & 0xFC | 0x02; // Locally administered
+        }
+        macAddress += (octet.toString(16).padStart(2, '0').toUpperCase());
+        if (i != 5) macAddress += ":";
+    }
+    return macAddress;
+}
 
 /**
  * Converts Float32Array (as raw Buffer) to Int16Array Buffer
@@ -102,6 +118,11 @@ export class WebSocketProxy {
             return;
         }
 
+        // Generate UNIQUE identity for this connection (Multi-user support)
+        const sessionMacAddress = generateRandomMac();
+        const sessionClientId = crypto.randomUUID();
+        logger.info(`Starting new session with Identity: MAC=${sessionMacAddress}, ClientID=${sessionClientId}`);
+
         // Buffer for messages before server is ready
         const messageBuffer: any[] = [];
         let serverWs: WebSocket | null = null;
@@ -119,7 +140,7 @@ export class WebSocketProxy {
         });
 
         clientWs.on('close', () => {
-            logger.info('Client closed connection');
+            logger.info(`Client closed connection (MAC=${sessionMacAddress})`);
             if (serverWs) serverWs.close();
             this.frameBuffer.reset();
         });
@@ -134,10 +155,10 @@ export class WebSocketProxy {
 
         logger.info(`Connecting to Xiaozhi Server: ${serverUrl}`);
 
-        // 2. Connect to Cloud
+        // 2. Connect to Cloud with UNIQUE Identity
         const headers = {
-            "Device-Id": deviceIdentity.macAddress,
-            "Client-Id": deviceIdentity.clientId,
+            "Device-Id": sessionMacAddress,
+            "Client-Id": sessionClientId,
             "Protocol-Version": "1",
             ...(config.DEVICE_TOKEN ? { "Authorization": `Bearer ${config.DEVICE_TOKEN}` } : {})
         };
