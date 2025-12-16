@@ -10,8 +10,8 @@ export const config = {
     DEVICE_TOKEN: (process.env.DEVICE_TOKEN || '').trim(),
 
     // Server URLs
-    WS_URL: (process.env.WS_URL || 'wss://api.xiaozhi.me/ws').trim(),
-    OTA_VERSION_URL: (process.env.OTA_VERSION_URL || 'https://api.xiaozhi.me/ota/version').trim(),
+    WS_URL: (process.env.WS_URL || 'wss://api.tenclass.net/xiaozhi/v1').trim(),
+    OTA_VERSION_URL: (process.env.OTA_VERSION_URL || 'https://api.tenclass.net/xiaozhi/ota').trim(),
 
     // Security
     ALLOWED_ORIGIN: (process.env.ALLOWED_ORIGIN || '*').trim(), // Default to * for dev context, but user should set this in prod
