@@ -55,7 +55,7 @@ export class WebSocketProxy {
                     data: {
                         device_id: deviceIdentity.macAddress,
                         ws_url: config.WS_URL,
-                        ws_proxy_url: `:${config.PORT}`, // Frontend appends this to ip.
+                        ws_proxy_url: config.WS_PROXY_URL || `:${config.PORT}`, // Use env var if set, else allow frontend to append port
                         ota_version_url: config.OTA_VERSION_URL,
                         token_enable: false,
                         token: "",

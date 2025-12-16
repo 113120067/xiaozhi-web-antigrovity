@@ -19,6 +19,7 @@ export const config = {
     // Local Server
     PORT: parseInt(process.env.PORT || '8080', 10),
     HOST: process.env.HOST || '0.0.0.0',
+    WS_PROXY_URL: (process.env.WS_PROXY_URL || '').trim(), // Optional override for local proxy address
 
     // Audio
     SAMPLE_RATE: 16000,
