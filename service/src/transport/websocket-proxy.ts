@@ -145,9 +145,12 @@ export class WebSocketProxy {
 
         // 1. Get Server Address
         let serverUrl = config.WS_URL;
+        let serverToken = "";
         try {
             // Check OTA with the GLOBAL persistent identity
-            serverUrl = await otaClient.getServerAddress();
+            const otaResult = await otaClient.getServerAddress();
+            serverUrl = otaResult.url;
+            serverToken = otaResult.token;
         } catch (e) {
             logger.warn('Failed to get OTA address, using default');
         }
@@ -155,12 +158,19 @@ export class WebSocketProxy {
         logger.info(`Connecting to Xiaozhi Server: ${serverUrl}`);
 
         // 2. Connect to Cloud with GLOBAL Identity
-        const headers = {
+        const headers: any = {
             "Device-Id": deviceIdentity.macAddress,
             "Client-Id": deviceIdentity.clientId,
-            "Protocol-Version": "1",
-            ...(config.DEVICE_TOKEN ? { "Authorization": `Bearer ${config.DEVICE_TOKEN}` } : {})
+            "Protocol-Version": "1"
         };
+
+        // Prioritize OTA token if available, otherwise fallback to config token
+        if (serverToken) {
+            headers["Authorization"] = `Bearer ${serverToken}`;
+            logger.info("Using Token from OTA");
+        } else if (config.DEVICE_TOKEN) {
+            headers["Authorization"] = `Bearer ${config.DEVICE_TOKEN}`;
+        }
 
         serverWs = new WebSocket(serverUrl, { headers });
 

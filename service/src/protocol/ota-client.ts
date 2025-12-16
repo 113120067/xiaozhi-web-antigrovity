@@ -5,7 +5,7 @@ import { XiaozhiOTAInfo } from './xiaozhi-proto';
 import { logger } from '../utils/logger';
 
 export class OTAClient {
-    async getServerAddress(mac?: string, clientId?: string): Promise<string> {
+    async getServerAddress(mac?: string, clientId?: string): Promise<{ url: string, token: string }> {
         mac = mac || deviceIdentity.macAddress;
         clientId = clientId || deviceIdentity.clientId;
 
@@ -49,21 +49,21 @@ export class OTAClient {
 
             const data = response.data;
             console.log("OTA Response Data:", JSON.stringify(data)); // Debug logging
-            if (data && data.mqtt) {
-                // The 'mqtt' field contains connection info. 
+
+            if (data && data.websocket) {
                 logger.info('OTA Info received. Device registered/updated.');
-                // We don't actually use the data returned by OTA for connection in the current logic,
-                // we just stick to the configured WS_URL. 
-                // Destructuring removed to avoid potential runtime errors if structure mismatches.
-                return config.WS_URL;
+                return {
+                    url: data.websocket.url || config.WS_URL,
+                    token: data.websocket.token || ""
+                };
             }
 
             logger.info('OTA Info received (fallback).');
-            return config.WS_URL;
+            return { url: config.WS_URL, token: "" };
         } catch (error: any) {
             logger.error('OTA Check failed:', error.message);
             // Fallback: Just return the configured URL, maybe server is down but WS works?
-            return config.WS_URL;
+            return { url: config.WS_URL, token: "" };
         }
     }
 }
