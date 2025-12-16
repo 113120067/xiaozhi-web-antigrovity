@@ -119,10 +119,7 @@ export class WebSocketProxy {
             return;
         }
 
-        // Generate UNIQUE identity for this connection (Multi-user support)
-        const sessionMacAddress = generateRandomMac();
-        const sessionClientId = crypto.randomUUID();
-        logger.info(`Starting new session with Identity: MAC=${sessionMacAddress}, ClientID=${sessionClientId}`);
+        logger.info(`Starting new session with Global Identity: MAC=${deviceIdentity.macAddress}`);
 
         // Buffer for messages before server is ready
         const messageBuffer: any[] = [];
@@ -141,7 +138,7 @@ export class WebSocketProxy {
         });
 
         clientWs.on('close', () => {
-            logger.info(`Client closed connection (MAC=${sessionMacAddress})`);
+            logger.info(`Client closed connection`);
             if (serverWs) serverWs.close();
             this.frameBuffer.reset();
         });
@@ -149,18 +146,18 @@ export class WebSocketProxy {
         // 1. Get Server Address
         let serverUrl = config.WS_URL;
         try {
-            // Check OTA with the UNIQUE session identity so the server recognizes us
-            serverUrl = await otaClient.getServerAddress(sessionMacAddress, sessionClientId);
+            // Check OTA with the GLOBAL persistent identity
+            serverUrl = await otaClient.getServerAddress();
         } catch (e) {
             logger.warn('Failed to get OTA address, using default');
         }
 
         logger.info(`Connecting to Xiaozhi Server: ${serverUrl}`);
 
-        // 2. Connect to Cloud with UNIQUE Identity
+        // 2. Connect to Cloud with GLOBAL Identity
         const headers = {
-            "Device-Id": sessionMacAddress,
-            "Client-Id": sessionClientId,
+            "Device-Id": deviceIdentity.macAddress,
+            "Client-Id": deviceIdentity.clientId,
             "Protocol-Version": "1",
             ...(config.DEVICE_TOKEN ? { "Authorization": `Bearer ${config.DEVICE_TOKEN}` } : {})
         };
